@@ -1,5 +1,6 @@
 package com.whosricardo.jwtsecuritytraining.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,5 +17,11 @@ public class TestController {
     @GetMapping("/user")
     public String userEndpoint(Authentication authentication) {
         return "Hello " + authentication.getName() + "! Your role is: " + authentication.getAuthorities();
+    }
+
+    @GetMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String adminEndpoint() {
+        return "Hello admin";
     }
 }

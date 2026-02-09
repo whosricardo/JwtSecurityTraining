@@ -50,4 +50,9 @@ public class RefreshTokenService {
         verifyExpiration(rToken);
         return rToken;
     }
+
+    public void deleteRefreshToken(String token) {
+        RefreshToken rToken = findByToken(token);
+        repository.delete(rToken);
+    }
 }

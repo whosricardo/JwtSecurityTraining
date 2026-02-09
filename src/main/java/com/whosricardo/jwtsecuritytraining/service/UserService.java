@@ -5,4 +5,6 @@ import com.whosricardo.jwtsecuritytraining.entity.User;
 
 public interface UserService {
     User registerUser(RegisterRequest registerRequest);
+
+    User findUserByUsername(String username);
 }

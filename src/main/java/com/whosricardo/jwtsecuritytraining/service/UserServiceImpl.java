@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import com.whosricardo.jwtsecuritytraining.dto.RegisterRequest;
 import com.whosricardo.jwtsecuritytraining.entity.User;
 import com.whosricardo.jwtsecuritytraining.exception.UserAlreadyExistsException;
+import com.whosricardo.jwtsecuritytraining.exception.UserNotFoundException;
 import com.whosricardo.jwtsecuritytraining.repository.UserRepository;
 
 @Service
@@ -32,5 +33,10 @@ public class UserServiceImpl implements UserService {
         user.setRole("ROLE_USER");
 
         return userRepository.save(user);
+    }
+
+    public User findUserByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException("User does not exist"));
     }
 }

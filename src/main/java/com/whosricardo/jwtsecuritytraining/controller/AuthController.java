@@ -16,8 +16,13 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.whosricardo.jwtsecuritytraining.dto.AuthResponse;
 import com.whosricardo.jwtsecuritytraining.dto.LoginRequest;
+import com.whosricardo.jwtsecuritytraining.dto.LoginResponse;
+import com.whosricardo.jwtsecuritytraining.dto.RefreshTokenRequest;
 import com.whosricardo.jwtsecuritytraining.dto.RegisterRequest;
+import com.whosricardo.jwtsecuritytraining.entity.RefreshToken;
+import com.whosricardo.jwtsecuritytraining.entity.User;
 import com.whosricardo.jwtsecuritytraining.security.JwtUtil;
+import com.whosricardo.jwtsecuritytraining.service.RefreshTokenService;
 import com.whosricardo.jwtsecuritytraining.service.UserService;
 
 @RestController
@@ -26,12 +31,15 @@ public class AuthController {
     private final JwtUtil jwtUtil;
     private final UserService userService;
     private final AuthenticationManager authenticationManager;
+    private final RefreshTokenService refreshTokenService;
 
     @Autowired
-    public AuthController(JwtUtil jwtUtil, UserService userService, AuthenticationManager authenticationManager) {
+    public AuthController(JwtUtil jwtUtil, UserService userService, AuthenticationManager authenticationManager,
+            RefreshTokenService refreshTokenService) {
         this.jwtUtil = jwtUtil;
         this.userService = userService;
         this.authenticationManager = authenticationManager;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @PostMapping("/register")
@@ -43,7 +51,7 @@ public class AuthController {
 
     @PostMapping("/login")
     @ResponseStatus(HttpStatus.OK)
-    public AuthResponse loginUser(@Valid @RequestBody LoginRequest loginRequest) {
+    public LoginResponse loginUser(@Valid @RequestBody LoginRequest loginRequest) {
         UsernamePasswordAuthenticationToken uPasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
                 loginRequest.username(), loginRequest.password());
         try {
@@ -52,6 +60,28 @@ public class AuthController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid username or password");
         }
 
-        return new AuthResponse(jwtUtil.generateToken(loginRequest.username()));
+        User user = userService.findUserByUsername(loginRequest.username());
+
+        String accessToken = jwtUtil.generateToken(user.getUsername());
+        RefreshToken rToken = refreshTokenService.createRefreshToken(user);
+
+        return new LoginResponse(accessToken, rToken.getToken());
     }
+
+    @PostMapping("/refresh")
+    @ResponseStatus(HttpStatus.CREATED)
+    public AuthResponse refreshToken(@Valid @RequestBody RefreshTokenRequest refreshTokenRequest) {
+        RefreshToken rToken = refreshTokenService.findByToken(refreshTokenRequest.refreshToken());
+        User user = rToken.getUser();
+        String newAcessToken = jwtUtil.generateToken(user.getUsername());
+        return new AuthResponse(newAcessToken);
+    }
+
+    @PostMapping("/logout")
+    public String logoutUser(@Valid @RequestBody RefreshTokenRequest rTokenRequest) {
+        RefreshToken rToken = refreshTokenService.findByToken(rTokenRequest.refreshToken());
+        refreshTokenService.deleteRefreshToken(rToken.getToken());
+        return "Token deleted";
+    }
+
 }
